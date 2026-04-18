@@ -1,43 +1,58 @@
-import { useState, useEffect } from "react";
-import { getExpenses, addExpense, deleteExpense, type Expense } from "@/lib/storage";
-import { Trash2, Plus } from "lucide-react";
+import { useState } from "react";
+import { useExpenses } from "@/hooks/useExpenses";
+import { Trash2, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BottomNav from "@/components/BottomNav";
+import { toast } from "sonner";
 
 const CATEGORIES = ["Food", "Transport", "Shopping", "Bills", "Entertainment", "Other"];
 
 const Expenses = () => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const { expenses, isLoading, addExpense, deleteExpense } = useExpenses();
   const [showAdd, setShowAdd] = useState(false);
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Other");
 
-  const reload = () => setExpenses(getExpenses());
-  useEffect(reload, []);
-
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!desc || !amount) return;
-    addExpense({
-      description: desc,
-      amount: parseFloat(amount),
-      date: new Date().toISOString(),
-      category,
-    });
-    setDesc("");
-    setAmount("");
-    setCategory("Other");
-    setShowAdd(false);
-    reload();
+    try {
+      await addExpense.mutateAsync({
+        description: desc,
+        amount: parseFloat(amount),
+        date: new Date().toISOString(),
+        category,
+      });
+      setDesc("");
+      setAmount("");
+      setCategory("Other");
+      setShowAdd(false);
+      toast.success("Expense added");
+    } catch (e) {
+      toast.error("Failed to add expense");
+    }
   };
 
-  const handleDelete = (id: string) => {
-    deleteExpense(id);
-    reload();
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteExpense.mutateAsync(id);
+      toast.success("Expense deleted");
+    } catch (e) {
+      toast.error("Failed to delete expense");
+    }
   };
 
-  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const expensesList = expenses || [];
+  const total = expensesList.reduce((s, e) => s + e.amount, 0);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -94,12 +109,12 @@ const Expenses = () => {
         </div>
 
         <div className="space-y-2">
-          {expenses.length === 0 && (
+          {expensesList.length === 0 && (
             <p className="text-center text-muted-foreground text-sm py-8">
               No expenses yet. Tap "Add" to get started.
             </p>
           )}
-          {expenses.map((exp) => (
+          {expensesList.map((exp) => (
             <div
               key={exp.id}
               className="flex items-center justify-between bg-card border border-border rounded-lg p-4"

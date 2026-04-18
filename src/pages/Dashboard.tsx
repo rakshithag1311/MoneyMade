@@ -1,35 +1,55 @@
-import { useState, useEffect } from "react";
-import { getBalance, setBalance, getTotalExpenses, getCurrentUsername } from "@/lib/storage";
-import { Pencil } from "lucide-react";
+import { useState } from "react";
+import { useProfile } from "@/hooks/useProfile";
+import { useExpenses } from "@/hooks/useExpenses";
+import { Pencil, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { toast } from "sonner";
 
 const Dashboard = () => {
-  const [balance, setBalanceState] = useState(0);
-  const [totalExpenses, setTotalExpenses] = useState(0);
+  const { profile, isLoading: isLoadingProfile, updateBalance } = useProfile();
+  const { expenses, isLoading: isLoadingExpenses } = useExpenses();
+  
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
-  const username = getCurrentUsername() || "User";
 
-  useEffect(() => {
-    setBalanceState(getBalance());
-    setTotalExpenses(getTotalExpenses());
-  }, []);
-
-  const handleSaveBalance = () => {
+  const handleSaveBalance = async () => {
     const val = parseFloat(editValue);
     if (!isNaN(val)) {
-      setBalance(val);
-      setBalanceState(val);
+      try {
+        await updateBalance.mutateAsync(val);
+        toast.success("Balance updated");
+      } catch (e: any) {
+        console.error(e);
+        toast.error(e.message || "Failed to update balance");
+      }
     }
     setEditing(false);
   };
 
+  if (isLoadingProfile || isLoadingExpenses) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const balance = profile?.balance || 0;
+  const username = profile?.username || "User";
+  const totalExpenses = expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-md mx-auto p-6 animate-fade-in">
-        <div className="mb-8">
-          <p className="text-muted-foreground text-sm">Welcome back,</p>
-          <h1 className="text-2xl font-heading font-bold text-foreground">{username}</h1>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <p className="text-muted-foreground text-sm">Welcome back,</p>
+            <h1 className="text-2xl font-heading font-bold text-foreground">{username}</h1>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            <div className={`w-2 h-2 rounded-full ${(!isLoadingProfile && profile) ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`} />
+            {(!isLoadingProfile && profile) ? 'Connected' : 'Connecting...'}
+          </div>
         </div>
 
         {/* Total Balance */}

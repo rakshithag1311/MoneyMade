@@ -1,38 +1,63 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { setUser } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const Login = () => {
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
+    setLoading(true);
 
-    if (isSignup) {
-      if (!username) return;
-      localStorage.setItem("user_" + email, JSON.stringify({ username, password }));
-      setUser(email, username);
-    } else {
-      const stored = localStorage.getItem("user_" + email);
-      if (!stored) {
-        alert("No account found. Please sign up.");
-        return;
+    try {
+      if (isSignup) {
+        if (!username) {
+          toast.error("Username is required");
+          setLoading(false);
+          return;
+        }
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username: username,
+            },
+            emailRedirectTo: window.location.origin,
+          },
+        });
+        if (error) throw error;
+        
+        if (data.session) {
+          toast.success("Account created! Logging you in...");
+          navigate("/");
+        } else {
+          toast.success("Signup successful! You can now log in.");
+          setIsSignup(false);
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        toast.success("Welcome back!");
+        navigate("/");
       }
-      const userData = JSON.parse(stored);
-      if (userData.password !== password) {
-        alert("Incorrect password.");
-        return;
-      }
-      setUser(email, userData.username);
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred");
+    } finally {
+      setLoading(false);
     }
-    navigate("/");
   };
 
   return (

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { getCurrentEmail, getCurrentUsername, clearUser } from "@/lib/storage";
-import { ChevronRight, Settings, Bell, Shield, HelpCircle, LogOut } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { useProfile } from "@/hooks/useProfile";
+import { ChevronRight, Settings, Bell, Shield, HelpCircle, LogOut, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 
 const menuItems = [
@@ -12,13 +13,24 @@ const menuItems = [
 
 const Profile = () => {
   const navigate = useNavigate();
-  const username = getCurrentUsername() || "User";
-  const email = getCurrentEmail() || "";
+  const { user, signOut } = useAuth();
+  const { profile, isLoading } = useProfile();
 
-  const handleLogout = () => {
-    clearUser();
+  const handleLogout = async () => {
+    await signOut();
     navigate("/login");
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const username = profile?.username || "User";
+  const email = user?.email || "";
 
   return (
     <div className="min-h-screen bg-background pb-20">

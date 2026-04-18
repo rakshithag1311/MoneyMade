@@ -1,9 +1,24 @@
 import SubPageLayout from "@/components/SubPageLayout";
-import { getCurrentUsername, getCurrentEmail } from "@/lib/storage";
+import { useAuth } from "@/lib/auth";
+import { useProfile } from "@/hooks/useProfile";
+import { Loader2 } from "lucide-react";
 
 const SettingsPage = () => {
-  const username = getCurrentUsername() || "User";
-  const email = getCurrentEmail() || "";
+  const { user } = useAuth();
+  const { profile, isLoading } = useProfile();
+
+  if (isLoading) {
+    return (
+      <SubPageLayout title="Account Settings">
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      </SubPageLayout>
+    );
+  }
+
+  const username = profile?.username || "User";
+  const email = user?.email || "";
 
   return (
     <SubPageLayout title="Account Settings">
@@ -17,7 +32,7 @@ const SettingsPage = () => {
           <p className="text-foreground font-medium">{email}</p>
         </div>
         <p className="text-xs text-muted-foreground text-center">
-          Account settings are stored locally on this device.
+          Account data is securely stored on your Supabase backend.
         </p>
       </div>
     </SubPageLayout>
