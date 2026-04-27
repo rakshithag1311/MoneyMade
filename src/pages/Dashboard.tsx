@@ -1,106 +1,168 @@
-import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
+import { useIncomes } from "@/hooks/useIncomes";
 import { useExpenses } from "@/hooks/useExpenses";
-import { Pencil, Loader2 } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
-import { toast } from "sonner";
+import MainLayout from "@/components/MainLayout";
+
+const StatCard = ({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) => (
+  <div className="bg-card border border-border rounded-lg p-5">
+    <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
+      {label}
+    </p>
+    <p className="text-2xl font-heading font-bold text-foreground">{value}</p>
+    {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+  </div>
+);
+
+type TxType = "income" | "expense";
+
+interface Transaction {
+  id: string;
+  label: string;
+  amount: number;
+  date: string;
+  type: TxType;
+  sub: string;
+}
+
+const fmt = (n: number) =>
+  "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 const Dashboard = () => {
-  const { profile, isLoading: isLoadingProfile, updateBalance } = useProfile();
-  const { expenses, isLoading: isLoadingExpenses } = useExpenses();
-  
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
+  const { profile, isLoading: loadingProfile } = useProfile();
+  const { incomes, isLoading: loadingIncomes } = useIncomes();
+  const { expenses, isLoading: loadingExpenses } = useExpenses();
 
-  const handleSaveBalance = async () => {
-    const val = parseFloat(editValue);
-    if (!isNaN(val)) {
-      try {
-        await updateBalance.mutateAsync(val);
-        toast.success("Balance updated");
-      } catch (e: any) {
-        console.error(e);
-        toast.error(e.message || "Failed to update balance");
-      }
-    }
-    setEditing(false);
-  };
-
-  if (isLoadingProfile || isLoadingExpenses) {
+  if (loadingProfile || loadingIncomes || loadingExpenses) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <MainLayout title="Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      </MainLayout>
     );
   }
 
-  const balance = profile?.balance || 0;
+  const totalIncome = (incomes ?? []).reduce((s, i) => s + i.amount, 0);
+  const totalExpenses = (expenses ?? []).reduce((s, e) => s + e.amount, 0);
+  const balance = totalIncome - totalExpenses;
+
+  // Build recent transactions list (last 8)
+  const incomeRows: Transaction[] = (incomes ?? []).map((i) => ({
+    id: i.id,
+    label: i.source,
+    amount: i.amount,
+    date: i.date,
+    type: "income",
+    sub: "Income",
+  }));
+  const expenseRows: Transaction[] = (expenses ?? []).map((e) => ({
+    id: e.id,
+    label: e.description,
+    amount: e.amount,
+    date: e.date,
+    type: "expense",
+    sub: e.category,
+  }));
+  const recentTx = [...incomeRows, ...expenseRows]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 8);
+
   const username = profile?.username || "User";
-  const totalExpenses = expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="max-w-md mx-auto p-6 animate-fade-in">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground text-sm">Welcome back,</p>
-            <h1 className="text-2xl font-heading font-bold text-foreground">{username}</h1>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-            <div className={`w-2 h-2 rounded-full ${(!isLoadingProfile && profile) ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`} />
-            {(!isLoadingProfile && profile) ? 'Connected' : 'Connecting...'}
-          </div>
+    <MainLayout title="Dashboard">
+      <div className="animate-fade-in space-y-6">
+        {/* Header */}
+        <div>
+          <p className="text-sm text-muted-foreground">Welcome back,</p>
+          <h1 className="text-2xl font-heading font-bold text-foreground mt-0.5">
+            {username}
+          </h1>
         </div>
 
-        {/* Total Balance */}
-        <div className="bg-card border border-border rounded-lg p-6 mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-muted-foreground text-sm">Total Balance</span>
-            <button
-              onClick={() => {
-                setEditValue(String(balance));
-                setEditing(true);
-              }}
-              className="p-1.5 rounded-md hover:bg-accent transition-colors"
-            >
-              <Pencil className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
-          {editing ? (
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-heading font-bold text-foreground">₹</span>
-              <input
-                type="number"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSaveBalance()}
-                autoFocus
-                className="text-2xl font-heading font-bold text-foreground bg-transparent border-b border-foreground outline-none w-full"
-              />
-              <button
-                onClick={handleSaveBalance}
-                className="text-sm text-foreground bg-accent px-3 py-1 rounded-md"
-              >
-                Save
-              </button>
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <StatCard
+            label="Balance"
+            value={fmt(balance)}
+            sub={balance >= 0 ? "Surplus" : "Deficit"}
+          />
+          <StatCard
+            label="Total Income"
+            value={fmt(totalIncome)}
+            sub={`${(incomes ?? []).length} entries`}
+          />
+          <StatCard
+            label="Total Expenses"
+            value={fmt(totalExpenses)}
+            sub={`${(expenses ?? []).length} entries`}
+          />
+        </div>
+
+        {/* Recent Transactions */}
+        <div>
+          <h2 className="text-base font-heading font-semibold text-foreground mb-3">
+            Recent Transactions
+          </h2>
+          {recentTx.length === 0 ? (
+            <div className="bg-card border border-border rounded-lg px-6 py-12 text-center">
+              <p className="text-muted-foreground text-sm">
+                No transactions yet. Add income or expenses to get started.
+              </p>
             </div>
           ) : (
-            <p className="text-3xl font-heading font-bold text-foreground">
-              ₹{balance.toLocaleString("en-IN")}
-            </p>
+            <div className="bg-card border border-border rounded-lg divide-y divide-border overflow-hidden">
+              {recentTx.map((tx) => (
+                <div
+                  key={tx.id + tx.type}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`w-1.5 h-8 rounded-full flex-shrink-0 ${
+                        tx.type === "income" ? "bg-foreground" : "bg-muted-foreground"
+                      }`}
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {tx.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {tx.sub} ·{" "}
+                        {new Date(tx.date).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-sm font-heading font-semibold ml-4 flex-shrink-0 ${
+                      tx.type === "income"
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {tx.type === "income" ? "+" : "-"}
+                    {fmt(tx.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
-
-        {/* Total Expenses */}
-        <div className="bg-card border border-border rounded-lg p-6">
-          <span className="text-muted-foreground text-sm">Total Expenses</span>
-          <p className="text-3xl font-heading font-bold text-destructive mt-2">
-            ₹{totalExpenses.toLocaleString("en-IN")}
-          </p>
-        </div>
       </div>
-      <BottomNav />
-    </div>
+    </MainLayout>
   );
 };
 

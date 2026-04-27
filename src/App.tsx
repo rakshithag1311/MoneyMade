@@ -6,22 +6,26 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import Expenses from "./pages/Expenses";
-import Profile from "./pages/Profile";
-import SettingsPage from "./pages/SettingsPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import PrivacyPage from "./pages/PrivacyPage";
-import HelpPage from "./pages/HelpPage";
+import IncomePage from "./pages/Income";
+import ExpensesPage from "./pages/Expenses";
+import AnalyticsPage from "./pages/Analytics";
+import ReportsPage from "./pages/Reports";
 import NotFound from "./pages/NotFound";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
-  
   return <>{children}</>;
 };
 
@@ -34,13 +38,46 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-            <Route path="/privacy" element={<ProtectedRoute><PrivacyPage /></ProtectedRoute>} />
-            <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/income"
+              element={
+                <ProtectedRoute>
+                  <IncomePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute>
+                  <ExpensesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

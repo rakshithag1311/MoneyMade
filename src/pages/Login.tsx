@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { Loader2, DollarSign } from "lucide-react";
 
 const Login = () => {
   const [isSignup, setIsSignup] = useState(false);
@@ -29,26 +28,20 @@ const Login = () => {
           email,
           password,
           options: {
-            data: {
-              username: username,
-            },
+            data: { username },
             emailRedirectTo: window.location.origin,
           },
         });
         if (error) throw error;
-        
         if (data.session) {
-          toast.success("Account created! Logging you in...");
+          toast.success("Account created! Logging you in…");
           navigate("/");
         } else {
           toast.success("Signup successful! You can now log in.");
           setIsSignup(false);
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
         navigate("/");
@@ -63,50 +56,77 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-sm animate-fade-in">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-heading font-bold text-foreground tracking-tight">
-            Money Made
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-10 h-10 bg-foreground rounded-lg flex items-center justify-center mb-4">
+            <DollarSign className="w-5 h-5 text-background" />
+          </div>
+          <h1 className="text-2xl font-heading font-bold text-foreground tracking-tight">
+            MoneyMade
           </h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            {isSignup ? "Create your account" : "Welcome back"}
+          <p className="text-sm text-muted-foreground mt-1">
+            {isSignup ? "Create your account" : "Sign in to your account"}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="auth-form" onSubmit={handleSubmit} className="space-y-3">
           {isSignup && (
-            <Input
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="bg-card border-border text-foreground placeholder:text-muted-foreground"
-            />
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Username
+              </label>
+              <input
+                id="username-input"
+                type="text"
+                placeholder="yourname"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-3 py-2.5 bg-card border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+              />
+            </div>
           )}
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="bg-card border-border text-foreground placeholder:text-muted-foreground"
-          />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="bg-card border-border text-foreground placeholder:text-muted-foreground"
-          />
-          <Button type="submit" className="w-full">
-            {isSignup ? "Sign Up" : "Log In"}
-          </Button>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Email</label>
+            <input
+              id="email-input"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2.5 bg-card border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Password</label>
+            <input
+              id="password-input"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2.5 bg-card border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+            />
+          </div>
+
+          <button
+            id="submit-btn"
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-md text-sm font-medium hover:opacity-80 disabled:opacity-50 transition-opacity mt-1"
+          >
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isSignup ? "Create Account" : "Sign In"}
+          </button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
           <button
+            id="toggle-auth-mode"
             onClick={() => setIsSignup(!isSignup)}
-            className="text-foreground font-medium underline underline-offset-4 hover:text-primary"
+            className="text-foreground font-medium underline underline-offset-4 hover:opacity-70 transition-opacity"
           >
-            {isSignup ? "Log In" : "Sign Up"}
+            {isSignup ? "Sign In" : "Sign Up"}
           </button>
         </p>
       </div>

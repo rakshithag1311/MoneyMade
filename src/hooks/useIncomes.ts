@@ -2,82 +2,81 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 
-export interface Expense {
+export interface Income {
   id: string;
   user_id: string;
-  description: string;
+  source: string;
   amount: number;
   date: string;
-  category: string;
 }
 
-export const useExpenses = () => {
+export const useIncomes = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: expenses, isLoading } = useQuery({
-    queryKey: ["expenses", user?.id],
+  const { data: incomes, isLoading } = useQuery({
+    queryKey: ["incomes", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
-        .from("expenses")
+        .from("incomes")
         .select("*")
         .eq("user_id", user.id)
         .order("date", { ascending: false });
 
       if (error) {
-        console.error("Error fetching expenses:", error);
+        console.error("Error fetching incomes:", error);
         return [];
       }
-      return data as Expense[];
+      return data as Income[];
     },
     enabled: !!user,
   });
 
-  const addExpense = useMutation({
-    mutationFn: async (expense: Omit<Expense, "id" | "user_id">) => {
+  const addIncome = useMutation({
+    mutationFn: async (income: Omit<Income, "id" | "user_id">) => {
       if (!user) throw new Error("User not authenticated");
       const { data, error } = await supabase
-        .from("expenses")
-        .insert([{ ...expense, user_id: user.id }])
+        .from("incomes")
+        .insert([{ ...income, user_id: user.id }])
         .select();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["expenses", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["incomes", user?.id] });
     },
   });
 
-  const updateExpense = useMutation({
-    mutationFn: async ({ id, ...expense }: Omit<Expense, "user_id">) => {
+  const updateIncome = useMutation({
+    mutationFn: async ({ id, ...income }: Omit<Income, "user_id">) => {
       if (!user) throw new Error("User not authenticated");
       const { error } = await supabase
-        .from("expenses")
-        .update(expense)
+        .from("incomes")
+        .update(income)
         .eq("id", id)
         .eq("user_id", user.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["expenses", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["incomes", user?.id] });
     },
   });
 
-  const deleteExpense = useMutation({
+  const deleteIncome = useMutation({
     mutationFn: async (id: string) => {
       if (!user) throw new Error("User not authenticated");
       const { error } = await supabase
-        .from("expenses")
+        .from("incomes")
         .delete()
         .eq("id", id)
         .eq("user_id", user.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["expenses", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["incomes", user?.id] });
     },
   });
 
-  return { expenses, isLoading, addExpense, updateExpense, deleteExpense };
+  return { incomes, isLoading, addIncome, updateIncome, deleteIncome };
 };
