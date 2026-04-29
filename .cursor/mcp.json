@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "moneymade-supabase": {
+      "command": "npx",
+      "args": ["tsx", "supabase-mcp.ts"],
+      "cwd": "C:\\Users\\DELL\\.antigravity\\MoneyMade-1"
+    }
+  }
+}
