@@ -34,7 +34,8 @@ import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, is
 
 type DateFilter = "this-month" | "last-month" | "this-year" | "last-year" | "all-time";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B9D'];
+// Grayscale colors for charts
+const COLORS = ['#000000', '#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#b3b3b3'];
 
 const ReportsPage = () => {
   const navigate = useNavigate();
@@ -182,8 +183,8 @@ const ReportsPage = () => {
   if (isLoading) {
     return (
       <MainLayout title="Reports">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <div className="flex items-center justify-center h-64 animate-pulse">
+          <Loader2 className="w-8 h-8 animate-spin text-foreground" />
         </div>
       </MainLayout>
     );
@@ -193,18 +194,18 @@ const ReportsPage = () => {
     return (
       <MainLayout title="Reports">
         <div className="animate-fade-in">
-          <div className="border border-dashed border-border rounded-lg px-6 py-16 text-center">
-            <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <div className="border border-dashed border-border rounded-lg px-6 py-16 text-center transition-all duration-300 hover:border-foreground/30">
+            <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4 animate-pulse" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No data available</h3>
             <p className="text-sm text-muted-foreground mb-6">
               Add income or expenses to see your financial reports
             </p>
             <div className="flex gap-3 justify-center">
-              <Button onClick={() => navigate("/income")} className="gap-2">
+              <Button onClick={() => navigate("/income")} className="gap-2 transition-all duration-200 hover:scale-105">
                 <Plus className="w-4 h-4" />
                 Add Income
               </Button>
-              <Button onClick={() => navigate("/expenses")} variant="outline" className="gap-2">
+              <Button onClick={() => navigate("/expenses")} variant="outline" className="gap-2 transition-all duration-200 hover:scale-105">
                 <Plus className="w-4 h-4" />
                 Add Expense
               </Button>
@@ -260,7 +261,7 @@ const ReportsPage = () => {
         </div>
 
         {/* Monthly Summary */}
-        <Card>
+        <Card className="transition-all duration-300 hover:shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -269,45 +270,54 @@ const ReportsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-4 transition-all duration-300 hover:scale-105 hover:shadow-md">
                 <p className="text-sm text-muted-foreground mb-1">Total Income</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  ${totalIncome.toFixed(2)}
+                <p className="text-2xl font-bold text-foreground">
+                  ₹{totalIncome.toFixed(2)}
                 </p>
               </div>
-              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border border-gray-400 dark:border-gray-600 rounded-lg p-4 transition-all duration-300 hover:scale-105 hover:shadow-md">
                 <p className="text-sm text-muted-foreground mb-1">Total Expenses</p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  ${totalExpenses.toFixed(2)}
+                <p className="text-2xl font-bold text-foreground">
+                  ₹{totalExpenses.toFixed(2)}
                 </p>
               </div>
-              <div className={`${savings >= 0 ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900' : 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900'} border rounded-lg p-4`}>
+              <div className={`bg-gradient-to-br ${savings >= 0 ? 'from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800' : 'from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700'} border ${savings >= 0 ? 'border-gray-500 dark:border-gray-500' : 'border-gray-600 dark:border-gray-400'} rounded-lg p-4 transition-all duration-300 hover:scale-105 hover:shadow-md`}>
                 <p className="text-sm text-muted-foreground mb-1">Savings</p>
-                <p className={`text-2xl font-bold ${savings >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                  ${savings.toFixed(2)}
+                <p className={`text-2xl font-bold ${savings >= 0 ? 'text-foreground' : 'text-gray-700 dark:text-gray-300'}`}>
+                  ₹{savings.toFixed(2)}
                 </p>
               </div>
             </div>
 
             {monthlyData.length > 0 && (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="income" fill="#10b981" name="Income" />
-                  <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="transition-all duration-500 animate-fade-in">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#666666" />
+                    <XAxis dataKey="month" stroke="#333333" />
+                    <YAxis stroke="#333333" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#ffffff', 
+                        border: '1px solid #333333',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: any) => `₹${value}`}
+                    />
+                    <Legend />
+                    <Bar dataKey="income" fill="#1a1a1a" name="Income" animationDuration={1000} />
+                    <Bar dataKey="expenses" fill="#666666" name="Expenses" animationDuration={1000} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Category Report */}
         {categoryData.length > 0 && (
-          <Card>
+          <Card className="transition-all duration-300 hover:shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <PieChart className="w-5 h-5" />
@@ -316,7 +326,7 @@ const ReportsPage = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
+                <div className="transition-all duration-500 animate-fade-in">
                   <ResponsiveContainer width="100%" height={300}>
                     <RechartsPieChart>
                       <Pie
@@ -328,27 +338,28 @@ const ReportsPage = () => {
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
+                        animationDuration={1000}
                       >
                         {categoryData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip formatter={(value: any) => `₹${value}`} />
                     </RechartsPieChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="space-y-2">
                   {categoryData.map((category, index) => (
-                    <div key={category.name} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div key={category.name} className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-lg transition-all duration-300 hover:scale-102 hover:shadow-md animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                       <div className="flex items-center gap-3">
                         <div 
-                          className="w-4 h-4 rounded" 
+                          className="w-4 h-4 rounded transition-transform duration-300 hover:scale-125" 
                           style={{ backgroundColor: COLORS[index % COLORS.length] }}
                         />
                         <span className="text-sm font-medium">{category.name}</span>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold">${category.value.toFixed(2)}</p>
+                        <p className="text-sm font-semibold">₹{category.value.toFixed(2)}</p>
                         <p className="text-xs text-muted-foreground">{category.percentage}%</p>
                       </div>
                     </div>
@@ -361,7 +372,7 @@ const ReportsPage = () => {
 
         {/* Income Statement */}
         {filteredIncomes.length > 0 && (
-          <Card>
+          <Card className="transition-all duration-300 hover:shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5" />
@@ -370,23 +381,23 @@ const ReportsPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {filteredIncomes.map(income => (
-                  <div key={income.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                {filteredIncomes.map((income, index) => (
+                  <div key={income.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-lg transition-all duration-300 hover:scale-102 hover:shadow-md animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
                     <div>
                       <p className="text-sm font-medium">{income.source}</p>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(income.date), "MMM dd, yyyy")}
                       </p>
                     </div>
-                    <p className="text-sm font-semibold text-green-600 dark:text-green-400">
-                      +${Number(income.amount).toFixed(2)}
+                    <p className="text-sm font-semibold text-foreground">
+                      +₹{Number(income.amount).toFixed(2)}
                     </p>
                   </div>
                 ))}
-                <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg mt-4">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-900 border border-gray-400 dark:border-gray-600 rounded-lg mt-4 transition-all duration-300 hover:shadow-lg">
                   <p className="text-sm font-semibold">Total Income</p>
-                  <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                    ${totalIncome.toFixed(2)}
+                  <p className="text-lg font-bold text-foreground">
+                    ₹{totalIncome.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -396,7 +407,7 @@ const ReportsPage = () => {
 
         {/* Net Worth Report */}
         {netWorthData.length > 0 && (
-          <Card>
+          <Card className="transition-all duration-300 hover:shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
@@ -404,28 +415,40 @@ const ReportsPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="mb-4">
+              <div className="mb-4 p-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-lg transition-all duration-300 hover:shadow-md">
                 <p className="text-sm text-muted-foreground mb-1">Current Net Worth</p>
-                <p className={`text-3xl font-bold ${netWorthData[netWorthData.length - 1]?.netWorth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  ${netWorthData[netWorthData.length - 1]?.netWorth.toFixed(2) || '0.00'}
+                <p className={`text-3xl font-bold ${netWorthData[netWorthData.length - 1]?.netWorth >= 0 ? 'text-foreground' : 'text-gray-600 dark:text-gray-400'} transition-all duration-300`}>
+                  ₹{netWorthData[netWorthData.length - 1]?.netWorth.toFixed(2) || '0.00'}
                 </p>
               </div>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={netWorthData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="netWorth" 
-                    stroke="#8884d8" 
-                    strokeWidth={2}
-                    name="Net Worth"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="transition-all duration-500 animate-fade-in">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={netWorthData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#666666" />
+                    <XAxis dataKey="month" stroke="#333333" />
+                    <YAxis stroke="#333333" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#ffffff', 
+                        border: '1px solid #333333',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: any) => `₹${value}`}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="netWorth" 
+                      stroke="#1a1a1a" 
+                      strokeWidth={3}
+                      name="Net Worth"
+                      animationDuration={1500}
+                      dot={{ fill: '#000000', r: 4 }}
+                      activeDot={{ r: 6, fill: '#333333' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         )}
