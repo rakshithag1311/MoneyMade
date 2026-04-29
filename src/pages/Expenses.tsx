@@ -9,13 +9,13 @@ const today = () => new Date().toISOString().split("T")[0];
 const fmt = (n: number) => "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 interface FormState {
-  description: string;
+  title: string;
   amount: string;
   category: string;
   date: string;
 }
 const emptyForm = (): FormState => ({
-  description: "",
+  title: "",
   amount: "",
   category: "Other",
   date: today(),
@@ -55,10 +55,10 @@ const ExpensesPage = () => {
   const [filterCat, setFilterCat] = useState<string>("All");
 
   const handleAdd = async () => {
-    if (!form.description.trim() || !form.amount) return;
+    if (!form.amount) return;
     try {
       await addExpense.mutateAsync({
-        description: form.description.trim(),
+        title: form.title.trim() || undefined,
         amount: parseFloat(form.amount),
         category: form.category,
         date: new Date(form.date).toISOString(),
@@ -66,35 +66,35 @@ const ExpensesPage = () => {
       setForm(emptyForm());
       setShowAdd(false);
       toast.success("Expense added");
-    } catch {
-      toast.error("Failed to add expense");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to add expense");
     }
   };
 
   const startEdit = (exp: Expense) => {
     setEditingId(exp.id);
     setEditForm({
-      description: exp.description,
+      title: exp.title || exp.description || exp.category || "",
       amount: String(exp.amount),
       category: exp.category,
-      date: exp.date.split("T")[0],
+      date: (exp.created_at || exp.date || new Date().toISOString()).split("T")[0],
     });
   };
 
   const handleUpdate = async () => {
-    if (!editingId || !editForm.description.trim() || !editForm.amount) return;
+    if (!editingId || !editForm.amount) return;
     try {
       await updateExpense.mutateAsync({
         id: editingId,
-        description: editForm.description.trim(),
+        title: editForm.title.trim(),
         amount: parseFloat(editForm.amount),
         category: editForm.category,
         date: new Date(editForm.date).toISOString(),
       });
       setEditingId(null);
       toast.success("Expense updated");
-    } catch {
-      toast.error("Failed to update expense");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to update expense");
     }
   };
 
@@ -132,7 +132,10 @@ const ExpensesPage = () => {
           </div>
           <button
             id="add-expense-btn"
-            onClick={() => { setShowAdd(!showAdd); setForm(emptyForm()); }}
+            onClick={() => {
+              setShowAdd(!showAdd);
+              setForm(emptyForm());
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-md text-sm font-medium hover:opacity-80 transition-opacity"
           >
             <Plus className="w-4 h-4" />
@@ -151,8 +154,8 @@ const ExpensesPage = () => {
                   id="expense-title"
                   type="text"
                   placeholder="e.g. Grocery shopping"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
                 />
               </div>
@@ -236,8 +239,8 @@ const ExpensesPage = () => {
                     <div className="sm:col-span-2">
                       <input
                         type="text"
-                        value={editForm.description}
-                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        value={editForm.title}
+                        onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                         placeholder="Title"
                         className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
                       />
@@ -284,10 +287,10 @@ const ExpensesPage = () => {
                   className="flex items-center justify-between px-4 py-3.5 hover:bg-accent/40 transition-colors"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{exp.description}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{exp.title || exp.category}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {exp.category} ·{" "}
-                      {new Date(exp.date).toLocaleDateString("en-IN", {
+                      {new Date(exp.created_at ?? exp.date ?? new Date().toISOString()).toLocaleDateString("en-IN", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",

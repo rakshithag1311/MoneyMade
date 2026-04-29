@@ -41,6 +41,7 @@ export const useProfile = () => {
       return {
         ...data,
         username: data.username || usernameFallback,
+        balance: (data as any).balance ?? 0,
       } as Profile;
     },
     enabled: !!user,
@@ -52,17 +53,44 @@ export const useProfile = () => {
       
       const usernameFallback = user.user_metadata?.username || user.email?.split("@")[0] || "User";
 
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({ 
-          id: user.id, 
-          balance: newBalance,
-          username: profile?.username || usernameFallback 
-        }, { onConflict: 'id' });
+      const basePayload: Record<string, any> = {
+        id: user.id,
+        balance: newBalance,
+        username: profile?.username || usernameFallback,
+      };
 
-      if (error) {
-        console.error("Error updating balance:", error);
-        throw error;
+      const attemptUpsert = async (payload: Record<string, any>) => {
+        const { error } = await supabase
+          .from("profiles")
+          .upsert(payload, { onConflict: "id" });
+        if (error) throw error;
+      };
+
+      let payload = { ...basePayload };
+      for (let i = 0; i < 3; i++) {
+        try {
+          await attemptUpsert(payload);
+          return;
+        } catch (e: any) {
+          const msg = String(e?.message ?? "");
+          const missingBalance =
+            msg.includes("Could not find the 'balance' column") || msg.includes("balance does not exist");
+          const missingUsername =
+            msg.includes("Could not find the 'username' column") || msg.includes("username does not exist");
+
+          if (missingBalance && payload.balance !== undefined) {
+            delete payload.balance;
+            continue;
+          }
+          if (missingUsername && payload.username !== undefined) {
+            delete payload.username;
+            continue;
+          }
+
+          // If profile schema doesn't support balance, just stop instead of failing the app.
+          console.error("Error updating profile:", e);
+          return;
+        }
       }
     },
     onSuccess: () => {

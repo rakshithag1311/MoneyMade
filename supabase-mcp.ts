@@ -72,27 +72,54 @@ server.tool(
   "Insert one expense row",
   {
     userId: z.string().uuid(),
-    title: z.string().min(1),
     amount: z.number().positive(),
     category: z.string().min(1),
   },
-  async ({ userId, title, amount, category }) => {
-    const { data, error } = await supabase
-      .from("expenses")
-      .insert({ user_id: userId, title, amount, category })
-      .select("*")
-      .single();
+  async ({ userId, amount, category }) => {
+    const nowIso = new Date().toISOString();
 
-    if (error) {
-      return {
-        content: [{ type: "text", text: `Supabase error: ${error.message}` }],
-        isError: true,
-      };
-    }
+    const attemptInsert = async (payload: Record<string, unknown>) => {
+      const { data, error } = await supabase
+        .from("expenses")
+        .insert(payload)
+        .select("*")
+        .single();
 
-    return {
-      content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      if (error) throw error;
+      return data;
     };
+
+    try {
+      const data = await attemptInsert({
+        user_id: userId,
+        amount,
+        category,
+        created_at: nowIso,
+      });
+
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    } catch (error: any) {
+      const msg = String(error?.message ?? "");
+      const createdAtMissing =
+        msg.includes('column "created_at" does not exist') || msg.includes("created_at does not exist");
+
+      if (!createdAtMissing) {
+        return {
+          content: [{ type: "text", text: `Supabase error: ${error?.message ?? String(error)}` }],
+          isError: true,
+        };
+      }
+
+      // If the table doesn't have created_at, fall back to date.
+      const data = await attemptInsert({
+        user_id: userId,
+        amount,
+        category,
+        date: nowIso,
+      });
+
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    }
   }
 );
 

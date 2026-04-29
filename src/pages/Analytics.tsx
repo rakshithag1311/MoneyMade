@@ -52,7 +52,7 @@ const AnalyticsPage = () => {
     });
 
     (expenses ?? []).forEach((e) => {
-      const key = format(startOfMonth(parseISO(e.date)), "MMM yy");
+      const key = format(startOfMonth(parseISO(e.created_at ?? e.date ?? new Date().toISOString())), "MMM yy");
       if (!map[key]) map[key] = { month: key, income: 0, expenses: 0 };
       map[key].expenses += e.amount;
     });
@@ -77,7 +77,7 @@ const AnalyticsPage = () => {
   const savingsData = useMemo(() => {
     const events: { date: string; delta: number }[] = [
       ...(incomes ?? []).map((i) => ({ date: i.date, delta: i.amount })),
-      ...(expenses ?? []).map((e) => ({ date: e.date, delta: -e.amount })),
+      ...(expenses ?? []).map((e) => ({ date: e.created_at ?? e.date ?? new Date().toISOString(), delta: -e.amount })),
     ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     let running = 0;

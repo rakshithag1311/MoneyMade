@@ -66,9 +66,9 @@ const Dashboard = () => {
   }));
   const expenseRows: Transaction[] = (expenses ?? []).map((e) => ({
     id: e.id,
-    label: e.description,
+    label: e.title || e.description || "Expense",
     amount: e.amount,
-    date: e.date,
+    date: e.created_at ?? e.date ?? new Date().toISOString(),
     type: "expense",
     sub: e.category,
   }));
