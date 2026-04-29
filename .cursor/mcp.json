@@ -1,9 +1,11 @@
 {
   "mcpServers": {
-    "moneymade-supabase": {
-      "command": "npx",
-      "args": ["tsx", "supabase-mcp.ts"],
-      "cwd": "C:\\Users\\DELL\\.antigravity\\MoneyMade-1"
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=${SUPABASE_PROJECT_REF}",
+      "headers": {
+        "Authorization": "Bearer sbp_b68e76be13245050c39f081fa5de7c6bb3758156"
+      }
     }
   }
 }

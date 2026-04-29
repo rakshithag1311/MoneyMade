@@ -99,6 +99,34 @@ const ensureProfile = async (session: Session | null) => {
       }
     }
   }
+
+  // Store OAuth provider information if user signed in with OAuth
+  const appMetadata = session.user.app_metadata;
+  const provider = appMetadata?.provider;
+  
+  if (provider && provider !== 'email') {
+    const providerUserId = session.user.user_metadata?.provider_id ?? 
+                          session.user.user_metadata?.sub ?? 
+                          session.user.id;
+    const avatarUrl = session.user.user_metadata?.avatar_url ?? 
+                     session.user.user_metadata?.picture ?? null;
+
+    try {
+      await supabase.from('oauth_providers').upsert({
+        user_id: session.user.id,
+        provider: provider,
+        provider_user_id: providerUserId,
+        email: session.user.email,
+        avatar_url: avatarUrl,
+        full_name: fullName,
+        raw_user_meta_data: session.user.user_metadata,
+      }, {
+        onConflict: 'provider,provider_user_id',
+      });
+    } catch (e) {
+      console.error('Error storing OAuth provider info:', e);
+    }
+  }
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
