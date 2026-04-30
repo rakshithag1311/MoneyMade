@@ -51,15 +51,8 @@ const ReportsPage = () => {
   const [dateFilter, setDateFilter] = useState<DateFilter>("this-month");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isDownloading, setIsDownloading] = useState(false);
-  const [hasGoogleDrive, setHasGoogleDrive] = useState(false);
 
   const isLoading = expensesLoading || incomesLoading;
-
-  // Check Google Drive access on mount
-  useMemo(async () => {
-    const hasAccess = await checkGoogleDriveAccess();
-    setHasGoogleDrive(hasAccess);
-  }, []);
 
   const handleDownloadReport = async () => {
     setIsDownloading(true);
@@ -80,36 +73,13 @@ const ReportsPage = () => {
       const doc = generateMonthlyReport(reportData);
       const fileName = `MoneyMade_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`;
 
-      // Check if user has Google Drive access
-      if (hasGoogleDrive) {
-        // Try to upload to Google Drive
-        const blob = getReportBlob(doc);
-        const result = await uploadToGoogleDrive(blob, fileName);
-
-        if (result.success) {
-          toast.success('Report saved to Google Drive!', {
-            description: 'Your monthly report has been uploaded to your Google Drive.',
-            duration: 5000
-          });
-          
-          // Also download locally
-          downloadReport(doc, fileName);
-        } else {
-          // Fallback to local download
-          toast.warning('Saved locally', {
-            description: result.error || 'Could not upload to Google Drive. Report downloaded to your device.',
-            duration: 5000
-          });
-          downloadReport(doc, fileName);
-        }
-      } else {
-        // Just download locally
-        downloadReport(doc, fileName);
-        toast.success('Report downloaded!', {
-          description: 'Your monthly report has been saved to your device.',
-          duration: 3000
-        });
-      }
+      // Download locally
+      downloadReport(doc, fileName);
+      
+      toast.success('Report downloaded!', {
+        description: 'Your monthly report has been saved to your device.',
+        duration: 3000
+      });
     } catch (error: any) {
       console.error('Error generating report:', error);
       toast.error('Failed to generate report', {
@@ -336,7 +306,7 @@ const ReportsPage = () => {
                 </>
               ) : (
                 <>
-                  {hasGoogleDrive ? <Cloud className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                  <Download className="w-4 h-4" />
                   Download Monthly Report
                 </>
               )}
