@@ -35,6 +35,9 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
   const pageHeight = doc.internal.pageSize.getHeight();
   let yPosition = 20;
 
+  // Set default font
+  doc.setFont('helvetica');
+
   // Header - Black background
   doc.setFillColor(0, 0, 0);
   doc.rect(0, 0, pageWidth, 40, 'F');
@@ -51,7 +54,7 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
   doc.text(data.dateRange, pageWidth / 2, 30, { align: 'center' });
   
   if (data.userName) {
-    doc.text(`Generated for: ${data.userName}`, pageWidth / 2, 36, { align: 'center' });
+    doc.text('Generated for: ' + data.userName, pageWidth / 2, 36, { align: 'center' });
   }
 
   yPosition = 50;
@@ -70,6 +73,11 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
   const boxHeight = 30;
   const boxY = yPosition;
 
+  // Format currency properly
+  const formatCurrency = (amount: number): string => {
+    return 'Rs ' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   // Income Box - Light gray
   doc.setFillColor(240, 240, 240);
   doc.rect(14, boxY, boxWidth, boxHeight, 'F');
@@ -77,10 +85,11 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
   doc.rect(14, boxY, boxWidth, boxHeight, 'S');
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
+  doc.setTextColor(0, 0, 0);
   doc.text('Total Income', 14 + boxWidth / 2, boxY + 10, { align: 'center' });
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(`₹${data.totalIncome.toFixed(2)}`, 14 + boxWidth / 2, boxY + 22, { align: 'center' });
+  doc.text(formatCurrency(data.totalIncome), 14 + boxWidth / 2, boxY + 22, { align: 'center' });
 
   // Expenses Box - Medium gray
   doc.setFillColor(220, 220, 220);
@@ -92,7 +101,7 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
   doc.text('Total Expenses', 14 + boxWidth + 5 + boxWidth / 2, boxY + 10, { align: 'center' });
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(`₹${data.totalExpenses.toFixed(2)}`, 14 + boxWidth + 5 + boxWidth / 2, boxY + 22, { align: 'center' });
+  doc.text(formatCurrency(data.totalExpenses), 14 + boxWidth + 5 + boxWidth / 2, boxY + 22, { align: 'center' });
 
   // Savings Box - Dark gray or light gray based on value
   const savingsColor = data.savings >= 0 ? 200 : 160;
@@ -105,7 +114,7 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
   doc.text('Savings', 14 + (boxWidth + 5) * 2 + boxWidth / 2, boxY + 10, { align: 'center' });
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(`₹${data.savings.toFixed(2)}`, 14 + (boxWidth + 5) * 2 + boxWidth / 2, boxY + 22, { align: 'center' });
+  doc.text(formatCurrency(data.savings), 14 + (boxWidth + 5) * 2 + boxWidth / 2, boxY + 22, { align: 'center' });
 
   yPosition = boxY + boxHeight + 15;
 
@@ -113,13 +122,14 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
   if (data.categoryData.length > 0) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
     doc.text('Expense Breakdown by Category', 14, yPosition);
     yPosition += 5;
 
     const categoryTableData = data.categoryData.map(cat => [
       cat.name,
-      `₹${cat.value.toFixed(2)}`,
-      `${cat.percentage}%`
+      formatCurrency(cat.value),
+      cat.percentage + '%'
     ]);
 
     autoTable(doc, {
@@ -131,12 +141,14 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
         fillColor: [0, 0, 0],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        halign: 'center'
+        halign: 'center',
+        font: 'helvetica'
       },
       bodyStyles: {
         fillColor: [245, 245, 245],
         textColor: [0, 0, 0],
-        halign: 'center'
+        halign: 'center',
+        font: 'helvetica'
       },
       alternateRowStyles: {
         fillColor: [255, 255, 255]
@@ -157,13 +169,14 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
   if (data.incomes.length > 0) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
     doc.text('Income Statement', 14, yPosition);
     yPosition += 5;
 
     const incomeTableData = data.incomes.map(income => [
       income.source,
       format(new Date(income.date), 'MMM dd, yyyy'),
-      `₹${Number(income.amount).toFixed(2)}`
+      formatCurrency(Number(income.amount))
     ]);
 
     autoTable(doc, {
@@ -175,11 +188,13 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
         fillColor: [0, 0, 0],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        halign: 'center'
+        halign: 'center',
+        font: 'helvetica'
       },
       bodyStyles: {
         fillColor: [245, 245, 245],
-        textColor: [0, 0, 0]
+        textColor: [0, 0, 0],
+        font: 'helvetica'
       },
       alternateRowStyles: {
         fillColor: [255, 255, 255]
@@ -205,6 +220,7 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
   if (data.expenses.length > 0) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
     doc.text('Expense Statement', 14, yPosition);
     yPosition += 5;
 
@@ -212,7 +228,7 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
       expense.title || expense.category,
       expense.category,
       format(new Date(expense.created_at || expense.date || new Date()), 'MMM dd, yyyy'),
-      `₹${Number(expense.amount).toFixed(2)}`
+      formatCurrency(Number(expense.amount))
     ]);
 
     autoTable(doc, {
@@ -224,11 +240,13 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
         fillColor: [0, 0, 0],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        halign: 'center'
+        halign: 'center',
+        font: 'helvetica'
       },
       bodyStyles: {
         fillColor: [245, 245, 245],
-        textColor: [0, 0, 0]
+        textColor: [0, 0, 0],
+        font: 'helvetica'
       },
       alternateRowStyles: {
         fillColor: [255, 255, 255]
@@ -246,7 +264,8 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
       yPosition = (doc as any).lastAutoTable.finalY + 5;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'italic');
-      doc.text(`Showing 20 of ${data.expenses.length} expenses`, 14, yPosition);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Showing 20 of ' + data.expenses.length + ' expenses', 14, yPosition);
     }
   }
 
@@ -258,7 +277,7 @@ export const generateMonthlyReport = (data: ReportData): jsPDF => {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(128, 128, 128);
     doc.text(
-      `Generated on ${format(new Date(), 'MMM dd, yyyy HH:mm')} | Page ${i} of ${totalPages}`,
+      'Generated on ' + format(new Date(), 'MMM dd, yyyy HH:mm') + ' | Page ' + i + ' of ' + totalPages,
       pageWidth / 2,
       pageHeight - 10,
       { align: 'center' }
