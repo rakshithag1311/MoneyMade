@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/MainLayout";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useIncomes } from "@/hooks/useIncomes";
+import { useAuth } from "@/lib/auth";
 import { 
   FileText, 
   TrendingUp, 
@@ -10,7 +11,9 @@ import {
   DollarSign, 
   Calendar,
   Plus,
-  Loader2
+  Loader2,
+  Download,
+  Cloud
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +34,9 @@ import {
   ResponsiveContainer 
 } from "recharts";
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, isWithinInterval } from "date-fns";
+import { generateMonthlyReport, downloadReport, getReportBlob } from "@/lib/reportGenerator";
+import { uploadToGoogleDrive, checkGoogleDriveAccess } from "@/lib/googleDrive";
+import { toast } from "sonner";
 
 type DateFilter = "this-month" | "last-month" | "this-year" | "last-year" | "all-time";
 
@@ -39,12 +45,99 @@ const COLORS = ['#000000', '#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080'
 
 const ReportsPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { expenses, isLoading: expensesLoading } = useExpenses();
   const { incomes, isLoading: incomesLoading } = useIncomes();
   const [dateFilter, setDateFilter] = useState<DateFilter>("this-month");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [hasGoogleDrive, setHasGoogleDrive] = useState(false);
 
   const isLoading = expensesLoading || incomesLoading;
+
+  // Check Google Drive access on mount
+  useMemo(async () => {
+    const hasAccess = await checkGoogleDriveAccess();
+    setHasGoogleDrive(hasAccess);
+  }, []);
+
+  const handleDownloadReport = async () => {
+    setIsDownloading(true);
+    try {
+      // Prepare report data
+      const reportData = {
+        incomes: filteredIncomes,
+        expenses: filteredExpenses,
+        totalIncome,
+        totalExpenses,
+        savings,
+        categoryData,
+        dateRange: getDateRangeLabel(dateFilter),
+        userName: user?.user_metadata?.full_name || user?.email || 'User'
+      };
+
+      // Generate PDF
+      const doc = generateMonthlyReport(reportData);
+      const fileName = `MoneyMade_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`;
+
+      // Check if user has Google Drive access
+      if (hasGoogleDrive) {
+        // Try to upload to Google Drive
+        const blob = getReportBlob(doc);
+        const result = await uploadToGoogleDrive(blob, fileName);
+
+        if (result.success) {
+          toast.success('Report saved to Google Drive!', {
+            description: 'Your monthly report has been uploaded to your Google Drive.',
+            duration: 5000
+          });
+          
+          // Also download locally
+          downloadReport(doc, fileName);
+        } else {
+          // Fallback to local download
+          toast.warning('Saved locally', {
+            description: result.error || 'Could not upload to Google Drive. Report downloaded to your device.',
+            duration: 5000
+          });
+          downloadReport(doc, fileName);
+        }
+      } else {
+        // Just download locally
+        downloadReport(doc, fileName);
+        toast.success('Report downloaded!', {
+          description: 'Your monthly report has been saved to your device.',
+          duration: 3000
+        });
+      }
+    } catch (error: any) {
+      console.error('Error generating report:', error);
+      toast.error('Failed to generate report', {
+        description: error.message || 'Please try again.',
+        duration: 4000
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const getDateRangeLabel = (filter: DateFilter): string => {
+    const now = new Date();
+    switch (filter) {
+      case "this-month":
+        return format(now, 'MMMM yyyy');
+      case "last-month":
+        return format(subMonths(now, 1), 'MMMM yyyy');
+      case "this-year":
+        return format(now, 'yyyy');
+      case "last-year":
+        return format(new Date(now.getFullYear() - 1, 0, 1), 'yyyy');
+      case "all-time":
+        return 'All Time';
+      default:
+        return format(now, 'MMMM yyyy');
+    }
+  };
 
   // Get date range based on filter
   const getDateRange = (filter: DateFilter) => {
@@ -228,8 +321,27 @@ const ReportsPage = () => {
             </p>
           </div>
           
-          {/* Filters */}
-          <div className="flex gap-2">
+          {/* Download Button and Filters */}
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Download Report Button */}
+            <Button
+              onClick={handleDownloadReport}
+              disabled={isDownloading || !hasData}
+              className="bg-black hover:bg-gray-800 text-white gap-2 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDownloading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  {hasGoogleDrive ? <Cloud className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                  Download Monthly Report
+                </>
+              )}
+            </Button>
+
             <Select value={dateFilter} onValueChange={(value) => setDateFilter(value as DateFilter)}>
               <SelectTrigger className="w-[160px]">
                 <Calendar className="w-4 h-4 mr-2" />
