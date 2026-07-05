@@ -3,10 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Stop app immediately if keys are missing
+// Warn but don't crash — app will show landing page without a backend connection
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Supabase URL or Anon Key is missing. Please add them to your .env file"
+  console.warn(
+    "Supabase URL or Anon Key is missing. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file"
   );
 }
 
